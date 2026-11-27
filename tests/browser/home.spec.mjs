@@ -12,6 +12,18 @@ test('the homepage renders, fits the viewport, and passes automated accessibilit
     page.getByRole('main').getByRole('heading', { level: 1 }),
   ).toBeVisible();
   await expect(page.getByRole('main')).toHaveCSS('display', 'grid');
+
+  const gettingStarted = page.getByRole('region', { name: 'Getting started' });
+  await expect(
+    gettingStarted.getByRole('heading', { name: 'Getting started', level: 2 }),
+  ).toBeVisible();
+  const steps = gettingStarted.getByRole('list').getByRole('listitem');
+  await expect(steps).toHaveText([
+    'Install dependencies with npm ci.',
+    'Start the development server with npm run dev.',
+    'Open the local URL printed in your terminal, then edit src/pages/index.astro.',
+  ]);
+
   expect(
     await page.evaluate(() => globalThis.document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(await page.evaluate(() => globalThis.innerWidth));
