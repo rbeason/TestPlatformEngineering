@@ -1,91 +1,75 @@
-# DevProd lab
+# Astro and Tailwind DevProd lab
 
-This lab takes a Python change from a fresh Codespace to a tested pull request. Run the same test command as a developer, in GitHub Actions, and when asking a coding agent to investigate a failed check.
+The golden path is a Node 26 workspace, one verification command, and a draft pull request with the diff and browser results. It borrows Stripe's pattern of giving people and agents a standard environment and putting deterministic checks around the agent's work. [Stripe's Minions workflow](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)
 
-## What this automates
+## Set up and run
 
-The folder started with only `AGENTS.md`. These were the workflow gaps in order of priority.
-
-| Friction | Automation |
-| --- | --- |
-| A new workspace had no runtime or first check. | The dev container selects Python 3.13 and runs the tests on creation. |
-| An unattended workspace can consume the free quota. | GitHub stops it after a five-minute idle timeout configured on your account or at creation. Stop it explicitly when you finish. |
-| A pull request had no repeatable verification. | GitHub Actions runs the same test command on PRs and pushes to `main`. New runs cancel older runs for the same ref, and the job has a five-minute limit. |
-| An agent had no failure reproduction command or handoff. | Give it the failing test and CI output, have it rerun the suite, and review the proposed change. |
-
-**Platform engineering** provides the reusable environment and CI capabilities. The **golden path** is the documented route you can take from opening the workspace to getting a verified PR. **Agentic CI/CD** can add an agent where diagnosis or repair requires judgment. Stripe describes giving its Minions the same type of devbox its engineers use, running checks deterministically, and limiting CI repair attempts before handing control back to a person. In this lab, the dev container plays the role of the devbox and Actions runs the checks. [Stripe's Minions write-up](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents) · [Stripe's workflow and retry design](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)
-
-## 1. Publish with your personal GitHub account and SSH key
-
-Sign in to GitHub as `rbeason` and create an empty private repository named `TestPlatformEngineering`. Leave the README, license, and gitignore initialization options unchecked. Use the path to your existing personal key in both commands below.
-
-From this folder on your Mac, verify that GitHub greets you with **Hi rbeason!**. GitHub returns status 1 after a successful SSH authentication test. [Testing SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection)
+Run these commands from the repository root on your Mac or in Codespaces. Node 26 is declared in `.nvmrc`. If you use nvm, run `nvm install` and `nvm use` from the root.
 
 ```sh
-ssh -T -o IdentitiesOnly=yes -i ~/.ssh/YOUR_PERSONAL_KEY git@github.com
+npm ci
+npx playwright install chromium
+npm run dev -- --host 0.0.0.0
 ```
 
-For the initial setup, configure Git to use that key for this repository and push the lab.
+On Linux, install Chromium and its system dependencies with `npx playwright install --with-deps chromium`. Codespaces installs those for you on creation. Open the forwarded port **4321** in Codespaces or `http://localhost:4321` on your Mac.
+
+| Command                | What it checks                                                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`         | ESLint on JavaScript and test files                                                                                   |
+| `npm run format:check` | Prettier on supported files. Run `npm run format` to apply changes.                                                   |
+| `npm run check`        | Astro template and TypeScript diagnostics                                                                             |
+| `npm run build`        | Generates the production Astro site and Tailwind CSS in `dist/`                                                       |
+| `npm test`             | Checks the built homepage and compiled CSS                                                                            |
+| `npm run test:browser` | Tests the built site in Chromium at desktop and mobile sizes, checks accessibility with axe, and captures screenshots |
+| `npm run verify`       | Runs all of the above in order and stops at the first failure                                                         |
+
+Run one smoke test after building with `node --test --test-name-pattern="compiled Tailwind" tests/site.test.mjs`. Run one browser project after building with `npm run test:browser -- --project=mobile`.
+
+- `src/pages/` contains the Astro page. `src/styles/` contains the Tailwind entry point.
+- `tests/` contains build smoke tests and `tests/browser/` contains Playwright tests. The tests use the built site as input.
+- `.devcontainer/` sets up Codespaces. `.github/workflows/` sets up CI and the optional GitHub-hosted agent.
+
+## One prompt to a draft PR
+
+Publish this setup to the default branch of `rbeason/TestPlatformEngineering` before starting an agent task. Both routes below start from GitHub's `main` and leave the merge to you.
+
+### Run from your Mac with Codex
+
+Use the Codex CLI signed into your existing account, GitHub CLI signed in as `rbeason`, Node 26, and the existing GitHub SSH key. Verify your two GitHub identities once. GitHub uses the SSH key for Git pushes and the `gh` login for creating draft PRs.
 
 ```sh
-git init -b main
-git config --local core.sshCommand 'ssh -o IdentitiesOnly=yes -i ~/.ssh/YOUR_PERSONAL_KEY'
-git add AGENTS.md README.md .gitignore .devcontainer .github devprod_lab tests
-git commit -m "Set up DevProd lab"
-git remote add origin git@github.com:rbeason/TestPlatformEngineering.git
-git push -u origin main
-```
-
-The SSH setting lives in this checkout's Git configuration. Keep the private key on your Mac. Inside Codespaces, GitHub supplies credentials scoped to the repository. [GitHub Codespaces authentication](https://docs.github.com/en/codespaces/reference/security-in-github-codespaces)
-
-## 2. Create a Codespace with automatic idle shutdown
-
-1. While signed in as `rbeason`, open **Settings → Codespaces**. Set **Default idle timeout** to **5 minutes** and save. The setting applies to newly created Codespaces. Closing a browser tab leaves the Codespace running until it stops, and terminal output can reset the idle timer. [GitHub idle timeout settings](https://docs.github.com/en/codespaces/setting-your-user-preferences/setting-your-timeout-period-for-github-codespaces)
-2. Open the repository and choose **Code → Codespaces**. Use the creation options to select `main` and a **2-core** machine. The lab uses the default Codespaces Linux image with a Python feature. Keep prebuilds disabled for this lab. [Creating a Codespace](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) · [Included usage](https://docs.github.com/en/codespaces/troubleshooting/troubleshooting-included-usage)
-3. When you finish, save your work and run **Codespaces: Stop Codespace** from the VS Code Command Palette, or stop it from the menu on the Codespaces dashboard. Confirm it shows as stopped. [Stopping and starting a Codespace](https://docs.github.com/en/codespaces/developing-in-a-codespace/stopping-and-starting-a-codespace) · [Codespaces dashboard](https://github.com/codespaces)
-
-GitHub Free for personal accounts includes **120 core-hours** and **15 GB-month** of storage per month. On a 2-core machine, that is up to **60 hours of active time** if storage lasts. A stopped Codespace uses storage until it is deleted. Push work you want to keep before deleting a Codespace you no longer need. With no valid payment method, GitHub blocks usage after the included quota is exhausted. If you have one on file, review your Codespaces budget and enable the stop-usage setting for your spending limit. [Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces) · [GitHub budgets](https://docs.github.com/en/billing/how-tos/set-up-budgets)
-
-If you prefer the CLI, run the following on your Mac. GitHub CLI uses an API login for Codespaces. Switch to `rbeason` if that account is already logged in, or use `gh auth login` and select it in the browser. Check that the second command prints `rbeason` before creating the Codespace.
-
-```sh
+ssh -T -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 git@github.com
+git config --local core.sshCommand 'ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519'
 gh auth switch --hostname github.com --user rbeason
-gh api user --jq .login
-gh codespace create --repo rbeason/TestPlatformEngineering --branch main --idle-timeout 5m
+gh api user --hostname github.com --jq .login
 ```
 
-Choose the 2-core option if prompted. Use the name returned by the CLI in these commands. Run the stop command at the end of the session.
+Look for `Hi rbeason!` and `rbeason` respectively. If `gh` has no saved login for that account, sign in first with `gh auth login`. Then give the wrapper one prompt from the repository root.
 
 ```sh
-gh codespace code --web --codespace CODESPACE_NAME
-gh codespace stop --codespace CODESPACE_NAME
-gh codespace list --repo rbeason/TestPlatformEngineering
+bash scripts/agent-pr.sh 'Add a short Getting started section below the verification card. Keep it readable at mobile widths and update the relevant browser test.'
 ```
 
-## 3. Run the golden path
+The wrapper creates a fresh Git worktree, installs dependencies, runs Codex, and independently runs `npm run verify` before committing and pushing an `agent/` branch. It prints the draft PR URL when done. If verification fails, it prints the retained worktree path so you can inspect the failure and generated reports. This route uses your Mac and your existing Codex access while Codespaces stays stopped.
 
-Use Python **3.13** and run all commands from the root of this repository, either locally or in Codespaces. The sample uses the standard library and runs directly from source, so there are no dependency install or build steps.
+### Run in GitHub's cloud
+
+With a paid Copilot plan and cloud agent access, run the prompt directly from any terminal with a signed-in GitHub CLI. Copilot provisions the runner, uses the checked-in setup workflow, and works in a draft PR. It runs separately from your Codespaces allowance and can use GitHub Actions and Copilot allowances. [GitHub cloud agent CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-from-cli) · [Agent setup workflow](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment)
 
 ```sh
-python3 --version
-python3 -m devprod_lab.usage 2 30
-python3 -m unittest -v
-python3 -m unittest -v tests.test_usage.CoreMinutesTests.test_returns_zero_for_no_active_time
+gh agent-task create --repo rbeason/TestPlatformEngineering --base main \
+  'Add a short Getting started section below the verification card. Keep it readable at mobile widths and update the relevant browser test.'
 ```
 
-The sample prints `60 core-minutes (1.00 core-hours)`. The third command is what the dev container and CI both run.
+## Review the result and merge
 
-- `devprod_lab/` contains the sample command-line application.
-- `tests/` contains unit tests. There are no fixtures or assets.
-- `.devcontainer/devcontainer.json` defines the Codespaces runtime and initial check.
-- `.github/workflows/ci.yml` runs the check on a GitHub-hosted runner. Your Codespace can stay stopped while CI finishes.
+1. Open the PR and review **Files changed**, especially changes to tests and CI configuration. On a Copilot PR, use **Approve and run workflows** if GitHub prompts you. [Copilot workflow approval](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings)
+2. Open **Checks → Verify Astro site** for the logs. When the browser stage runs, its Actions run has a **browser-report** artifact with desktop and mobile screenshots, results, and traces for browser failures. Download and extract it, then run `npx playwright show-report /path/to/extracted-report` from the repository root. For an interactive preview, check out the PR and run `npm ci` and `npm run dev`. [Playwright CI reports](https://playwright.dev/docs/ci-intro)
+3. Once the check passes and you are happy with the result, click **Ready for review**, then **Squash and merge**. Formal approval and merge are separate GitHub actions. For a private repository on GitHub Free, use the green check as your manual merge gate. If your GitHub plan supports private branch protection, require **Verify Astro site** on `main` to enforce the gate. [Protected branch availability](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
 
-## 4. Practice agent-assisted CI triage
+## Keep Codespaces usage low
 
-On a practice branch, change the multiplication in `devprod_lab/usage.py` to addition, push the branch, and open a draft PR. Stop the Codespace and watch the check from the PR. The failure should show which input produced a result different from the test expectation.
-
-Give your coding agent the failed test output and this task.
-
-> Reproduce the failure with `python3 -m unittest -v`. Explain the root cause and propose a minimal fix that preserves the tested behavior. Run the suite again and show me the diff and test output for review.
-
-Review the patch, push it yourself, and confirm the next CI run passes. Record the time from Codespace creation to the first green check and the time from CI failure to reproduction. Repeat the exercise after changing one part of the workflow to see whether the change saves time. The workflow uses a read-only repository token. Agent execution is a manual exercise, and the lab ends at a verified PR.
+- While signed in as `rbeason`, set **Settings → Codespaces → Default idle timeout** to **5 minutes** before creating the Codespace. Use a **2-core** machine and leave prebuilds off. [Codespaces idle timeout](https://docs.github.com/en/codespaces/setting-your-user-preferences/setting-your-timeout-period-for-github-codespaces)
+- Save your work and choose **Codespaces: Stop Codespace** in the Command Palette at the end of a session. A running development server can emit output and reset the idle timer. GitHub-hosted CI and either agent route can run with your Codespace stopped. [Codespaces dashboard](https://github.com/codespaces)
+- GitHub Free includes **120 core-hours** and **15 GB-month** of Codespaces storage per month. That is up to **60 active hours on a 2-core machine**. Stopped machines continue to use storage, including downloaded browser binaries. Push your work before deleting a Codespace you no longer need. [Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)

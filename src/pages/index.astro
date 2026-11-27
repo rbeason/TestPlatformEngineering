@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DevProd Lab</title>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <main class="mx-auto grid min-h-screen max-w-3xl content-center gap-8 px-6 py-16 sm:px-12">
+      <header class="space-y-4">
+        <h1 class="text-5xl font-semibold tracking-tight sm:text-7xl">DevProd Lab</h1>
+        <p class="max-w-xl text-lg text-slate-300">
+          Make a change in Astro and Tailwind, run the shared checks, and open a pull request for review.
+        </p>
+      </header>
+      <section class="rounded-2xl border border-slate-700 bg-slate-900 p-6" aria-labelledby="verify">
+        <h2 id="verify" class="text-xl font-semibold">Verify a change</h2>
+        <p class="mt-2 text-slate-300">Run the same type checks, build, and smoke tests as CI.</p>
+        <pre class="mt-4 overflow-auto rounded-lg bg-slate-950 p-4 text-emerald-300"><code>npm run verify</code></pre>
+      </section>
+    </main>
+  </body>
+</html>

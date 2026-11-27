@@ -13,15 +13,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  verify:
+    name: Verify Astro site
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-node@v6
         with:
-          python-version: "3.13"
-      - name: Run unit tests
-        run: python3 -m unittest -v
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify
+      - name: Upload browser report and screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

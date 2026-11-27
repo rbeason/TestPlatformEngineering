@@ -14,6 +14,8 @@ Use the formatter and naming conventions of the language you introduce. If forma
 
 ## Testing
 
+For Astro changes, run `npm run verify` from the repository root before opening a pull request. It runs ESLint, Prettier, Astro diagnostics, a production build, Node smoke tests, and Playwright checks. Update test coverage when behavior changes.
+
 Add tests for new behavior and include a regression test when fixing a bug that the test suite can reproduce. Name tests for the behavior and condition they verify. For example, a test for configuration loading could be named `rejects_missing_required_config` if the framework supports that convention. Document how to run the full suite and a single test when the first test framework is added.
 
 ## Commits and Pull Requests
