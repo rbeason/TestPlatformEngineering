@@ -1,0 +1,10 @@
+{
+  "name": "DevProd Lab",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13",
+      "installTools": false
+    }
+  },
+  "postCreateCommand": "python3 -m unittest -v"
+}
