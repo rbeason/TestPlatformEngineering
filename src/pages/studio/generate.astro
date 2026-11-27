@@ -1,0 +1,53 @@
+---
+import '../../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Generate a campaign | Campaign Studio</title>
+  </head>
+  <body class="min-h-screen bg-[#f5f5ef] text-[#182d25]">
+    <header class="border-b border-[#d9ddd3] bg-white">
+      <nav aria-label="Studio" class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <a href="/studio/" class="text-xl font-bold tracking-tight">Campaign Studio</a>
+        <a href="/studio/" class="text-sm font-semibold underline underline-offset-4">Template editor</a>
+      </nav>
+    </header>
+    <main class="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:py-14">
+      <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">Generate a landing page</h1>
+      <p class="mt-3 max-w-xl text-[#465f54]">Describe the campaign. Codex builds and tests the page, then opens a draft PR for review.</p>
+      <div class="mt-8 grid items-start gap-6 lg:grid-cols-2">
+        <section class="min-w-0 rounded-xl border border-[#d9ddd3] bg-white p-5 sm:p-7" aria-labelledby="brief-heading">
+          <h2 id="brief-heading" class="text-xl font-bold">Campaign brief</h2>
+          <form id="agent-brief" class="mt-5 space-y-4">
+            <label class="block text-sm font-semibold">Page slug
+              <input name="slug" autocomplete="off" placeholder="spring-webinar" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="50" required class="mt-1.5 block w-full rounded-md border border-[#aebdb3] p-2.5 font-normal" />
+            </label>
+            <label class="block text-sm font-semibold">Prompt
+              <textarea name="prompt" rows="8" maxlength="4000" required placeholder="Build a spring webinar page with a navy and coral palette, an agenda, and a registration button. Use this registration URL…" class="mt-1.5 block w-full rounded-md border border-[#aebdb3] p-2.5 font-normal"></textarea>
+            </label>
+            <button id="generate-draft" type="submit" disabled class="rounded-md bg-[#1a4435] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#285744] disabled:opacity-50">Generate draft</button>
+          </form>
+          <p id="agent-error" role="alert" class="mt-4 text-sm font-semibold text-red-800" hidden></p>
+        </section>
+        <section class="min-w-0 rounded-xl border border-[#d9ddd3] bg-white p-5 sm:p-7" aria-labelledby="review-heading">
+          <h2 id="review-heading" class="text-xl font-bold">Review</h2>
+          <p id="agent-status" role="status" class="mt-3 text-sm font-semibold text-[#465f54]">Connecting to local Codex…</p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a id="agent-preview" hidden target="_blank" rel="noopener noreferrer" class="rounded-md bg-[#1a4435] px-4 py-2.5 text-sm font-bold text-white">Open preview</a>
+            <a id="agent-pr" hidden target="_blank" rel="noopener noreferrer" class="rounded-md border border-[#aebdb3] px-4 py-2.5 text-sm font-bold">View PR</a>
+          </div>
+          <details id="agent-log-panel" class="mt-5 border-t border-[#d9ddd3] pt-4" hidden>
+            <summary class="cursor-pointer text-sm font-semibold">Run log</summary>
+            <pre id="agent-log" class="mt-3 max-h-72 overflow-auto rounded-md bg-[#edf0e9] p-3 text-xs whitespace-pre-wrap wrap-break-word"></pre>
+          </details>
+        </section>
+      </div>
+    </main>
+    <script src="../../lib/studio-agent-client.ts"></script>
+  </body>
+</html>

@@ -13,6 +13,13 @@ done
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 repo='rbeason/TestPlatformEngineering'
 base=main
+generated_slug=${STUDIO_GENERATED_SLUG:-}
+result_file=${STUDIO_PR_RESULT:-}
+unset STUDIO_GENERATED_SLUG STUDIO_PR_RESULT
+if [[ -n "$generated_slug" && ! "$generated_slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+  printf 'Invalid campaign slug.\n' >&2
+  exit 2
+fi
 if [[ "$(node -p 'process.versions.node.split(".")[0]')" != "$(cat .nvmrc)" ]]; then
   printf 'Use Node %s from .nvmrc before starting a task.\n' "$(cat .nvmrc)" >&2
   exit 1
@@ -44,6 +51,14 @@ remove_task_worktree() {
 }
 
 cd "$worktree"
+if [[ -n "$generated_slug" ]] && {
+  [[ -e "src/pages/lp/$generated_slug.astro" ]] ||
+  [[ -e "src/pages/lp/$generated_slug/index.astro" ]] ||
+  [[ -e "src/campaigns/$generated_slug.json" ]];
+}; then
+  printf 'A campaign with that slug already exists on main.\n' >&2
+  exit 1
+fi
 npm ci
 npx playwright install chromium
 
@@ -70,16 +85,39 @@ if [[ -z "$(git status --porcelain)" ]]; then
   exit 0
 fi
 
+git add -A
+if [[ -n "$generated_slug" ]]; then
+  while IFS= read -r -d '' path; do
+    case "$path" in
+      "src/pages/lp/$generated_slug/"* | "public/campaigns/$generated_slug/"* | "tests/browser/campaign-$generated_slug.spec.mjs") ;;
+      *) printf 'Generated campaign changed a file outside its scope: %s\n' "$path" >&2; exit 1 ;;
+    esac
+  done < <(git diff --cached --name-only --no-renames -z)
+fi
+
 # Reinstall from the proposed lockfile so the gate matches a clean CI checkout.
 npm ci
 npx playwright install chromium
 npm run verify
-git add -A
-git commit -m "Implement agent task $task_id"
+if [[ -n "$generated_slug" && ! -f "dist/lp/$generated_slug/index.html" ]]; then
+  printf 'The campaign did not build at /lp/%s/.\n' "$generated_slug" >&2
+  exit 1
+fi
+
+title="Agent task $task_id"
+body='Changes prepared by Codex in an isolated worktree. Local verification passed with `npm run verify`. See Files changed and the CI browser report before merging.'
+if [[ -n "$generated_slug" ]]; then
+  title="Add campaign: $generated_slug"
+  body="$body Review /lp/$generated_slug/ on the Cloudflare Worker Preview posted on this PR."
+fi
+git commit -m "$title"
 git push origin "HEAD:refs/heads/$branch"
-gh pr create --repo "$repo" --base "$base" --head "$branch" --draft \
-  --title "Agent task $task_id" \
-  --body 'Changes prepared by Codex in an isolated worktree. Local verification passed with `npm run verify`. See Files changed and the CI browser report before merging.'
+pr_url=$(gh pr create --repo "$repo" --base "$base" --head "$branch" --draft \
+  --title "$title" --body "$body")
+printf '%s\n' "$pr_url"
+if [[ -n "$result_file" ]]; then
+  printf '%s\n' "$pr_url" > "$result_file"
+fi
 
 # Keep the branch on GitHub. Discard generated files from this temporary checkout.
 remove_task_worktree

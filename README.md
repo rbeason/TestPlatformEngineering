@@ -108,3 +108,16 @@ Keep the default dependency installation. The build already picks up Node 26 fro
 Open a PR from a branch in the connected repository. After a successful preview build, Cloudflare posts the Preview URL on the PR. Open it and append `/lp/<page-slug>/` to review the finished campaign. Another push updates that Preview. A merge to `main` triggers the production build and deploy. GitHub CI and Cloudflare builds run independently. [Worker Previews](https://developers.cloudflare.com/workers/previews/get-started/)
 
 Preview URLs are public by default. The prototype stores drafts on your device. Enable Cloudflare Access on the preview and production hosts before using the app for private campaigns. [Worker Preview access](https://developers.cloudflare.com/workers/previews/configuration/)
+
+## Generate a campaign with your local Codex subscription
+
+In a terminal on your Mac, sign in to the Codex CLI with the account that includes your subscription. Use the same `rbeason` GitHub CLI login and SSH key as the prompt-to-PR script. Start the local runner from the repository root.
+
+```sh
+npm ci
+npm run studio:agent
+```
+
+Open [Generate a landing page](http://127.0.0.1:4321/studio/generate/) using the port Astro prints. Enter a new slug and a brief with the page purpose, look, copy, and CTA. **Generate draft** uses Codex in a fresh worktree of GitHub's `main`. The runner verifies the campaign and opens a draft PR. If Cloudflare posts a Worker Preview, the **Review** panel displays **Open preview** for the campaign route alongside **View PR**. Revisions and merge decisions happen on GitHub.
+
+Keep the terminal running during the test. This mode exposes the runner only on the Mac's loopback address and keeps the latest run in memory. The deployed Studio remains a static app. The template editor at `/studio/` remains available for manual content edits.
