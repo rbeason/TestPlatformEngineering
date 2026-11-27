@@ -109,15 +109,43 @@ Open a PR from a branch in the connected repository. After a successful preview 
 
 Preview URLs are public by default. The prototype stores drafts on your device. Enable Cloudflare Access on the preview and production hosts before using the app for private campaigns. [Worker Preview access](https://developers.cloudflare.com/workers/previews/configuration/)
 
-## Generate a campaign with your local Codex subscription
+## Generate on Cloudflare with a Mac runner
 
-In a terminal on your Mac, sign in to the Codex CLI with the account that includes your subscription. Use the same `rbeason` GitHub CLI login and SSH key as the prompt-to-PR script. Start the local runner from the repository root.
+The production Studio submits jobs to a Cloudflare Worker and D1 queue. Your Mac polls the queue over HTTPS and runs your existing Codex CLI. The browser never connects to your Mac. Generated pages and draft PR previews continue to use the Cloudflare Git integration above.
+
+### One-time setup
+
+From the repository root on your Mac, sign in to Wrangler with the account that owns the `testplatformengineering` Worker, then create and migrate the queue.
 
 ```sh
-npm ci
-npm run studio:agent
+npx --yes wrangler@4.168.0 login
+npx --yes wrangler@4.168.0 d1 create testplatformengineering-studio --binding STUDIO_DB --update-config
+npx --yes wrangler@4.168.0 d1 migrations apply STUDIO_DB --remote
 ```
 
-Open [Generate a landing page](http://127.0.0.1:4321/studio/generate/) using the port Astro prints. Enter a new slug and a brief with the page purpose, look, copy, and CTA. **Generate draft** uses Codex in a fresh worktree of GitHub's `main`. The runner verifies the campaign and opens a draft PR. If Cloudflare posts a Worker Preview, the **Review** panel displays **Open preview** for the campaign route alongside **View PR**. Revisions and merge decisions happen on GitHub.
+If the database already exists, add its binding and UUID to the top level of `wrangler.jsonc` before running the migration. Commit the updated config with the source and push to `main`. The Git integration deploys the Worker. [D1 configuration](https://developers.cloudflare.com/workers/wrangler/configuration/) · [D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)
 
-Keep the terminal running during the test. This mode exposes the runner only on the Mac's loopback address and keeps the latest run in memory. The deployed Studio remains a static app. The template editor at `/studio/` remains available for manual content edits.
+In the Worker dashboard under **Settings → Variables and secrets → Production**, add two **Secret** values. Generate two distinct keys of at least 32 characters, for example by running `openssl rand -hex 32` twice. Keep them in a password manager.
+
+| Secret                 | Used by                                             |
+| ---------------------- | --------------------------------------------------- |
+| `STUDIO_BROWSER_TOKEN` | Marketer and reviewer unlocking the hosted Studio   |
+| `STUDIO_RUNNER_TOKEN`  | Your Mac polling the queue and reporting PR results |
+
+This is a shared-key test with one job at a time. Only give the Studio key to people you trust to submit prompts to your Codex runner. The production hostname is the only host that accepts jobs. PR previews can serve the generated pages without granting access to the queue.
+
+### Run a campaign
+
+Verify that `codex login status` shows that you’re signed in with ChatGPT and that `gh api user --jq .login` prints `rbeason`. Use the same SSH key as the agent script. Start the runner from the repo root and paste the **runner** key when prompted.
+
+```sh
+printf 'Runner key: '
+read -rs STUDIO_RUNNER_TOKEN
+printf '\n'
+STUDIO_RUNNER_TOKEN="$STUDIO_RUNNER_TOKEN" npm run studio:agent
+unset STUDIO_RUNNER_TOKEN
+```
+
+Keep the terminal running and the Mac awake. Open [Campaign Studio](https://testplatformengineering.eason-bryce.workers.dev/studio/generate/), unlock it with the **browser** key, and submit a slug and brief. The review panel shows the latest job, then **View PR** and **Open preview** as they become available. The Mac terminal has detailed Codex and test logs. If Cloudflare has not posted a preview within ten minutes, use the PR to follow the build. Merge from GitHub once you’re satisfied with the preview.
+
+The Worker handler is in `worker/`, its database migration is in `migrations/`, and the Mac runner is `scripts/studio-agent.mjs`. Run the queue tests with `node --test tests/studio-agent.test.mjs`.

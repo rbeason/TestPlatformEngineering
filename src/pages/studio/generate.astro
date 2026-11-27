@@ -23,7 +23,13 @@ import '../../styles/global.css';
       <div class="mt-8 grid items-start gap-6 lg:grid-cols-2">
         <section class="min-w-0 rounded-xl border border-[#d9ddd3] bg-white p-5 sm:p-7" aria-labelledby="brief-heading">
           <h2 id="brief-heading" class="text-xl font-bold">Campaign brief</h2>
-          <form id="agent-brief" class="mt-5 space-y-4">
+          <form id="studio-unlock" class="mt-5 space-y-3">
+            <label class="block text-sm font-semibold">Studio access key
+              <input id="studio-access-key" type="password" required autocomplete="current-password" class="mt-1.5 block w-full rounded-md border border-[#aebdb3] p-2.5 font-normal" />
+            </label>
+            <button type="submit" class="rounded-md border border-[#aebdb3] px-4 py-2.5 text-sm font-bold">Unlock Studio</button>
+          </form>
+          <form id="agent-brief" hidden class="mt-5 space-y-4">
             <label class="block text-sm font-semibold">Page slug
               <input name="slug" autocomplete="off" placeholder="spring-webinar" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="50" required class="mt-1.5 block w-full rounded-md border border-[#aebdb3] p-2.5 font-normal" />
             </label>
@@ -36,15 +42,11 @@ import '../../styles/global.css';
         </section>
         <section class="min-w-0 rounded-xl border border-[#d9ddd3] bg-white p-5 sm:p-7" aria-labelledby="review-heading">
           <h2 id="review-heading" class="text-xl font-bold">Review</h2>
-          <p id="agent-status" role="status" class="mt-3 text-sm font-semibold text-[#465f54]">Connecting to local Codex…</p>
+          <p id="agent-status" role="status" class="mt-3 text-sm font-semibold text-[#465f54]">Unlock Studio to submit a prompt or see the latest review.</p>
           <div class="mt-5 flex flex-wrap gap-3">
             <a id="agent-preview" hidden target="_blank" rel="noopener noreferrer" class="rounded-md bg-[#1a4435] px-4 py-2.5 text-sm font-bold text-white">Open preview</a>
             <a id="agent-pr" hidden target="_blank" rel="noopener noreferrer" class="rounded-md border border-[#aebdb3] px-4 py-2.5 text-sm font-bold">View PR</a>
           </div>
-          <details id="agent-log-panel" class="mt-5 border-t border-[#d9ddd3] pt-4" hidden>
-            <summary class="cursor-pointer text-sm font-semibold">Run log</summary>
-            <pre id="agent-log" class="mt-3 max-h-72 overflow-auto rounded-md bg-[#edf0e9] p-3 text-xs whitespace-pre-wrap wrap-break-word"></pre>
-          </details>
         </section>
       </div>
     </main>

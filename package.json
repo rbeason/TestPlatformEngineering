@@ -17,7 +17,7 @@
     "test:browser": "playwright test",
     "verify": "npm run lint && npm run format:check && npm run check && npm run build && npm test && npm run test:browser",
     "campaign:pr": "node scripts/campaign-pr.mjs",
-    "studio:agent": "STUDIO_AGENT=1 astro dev --host 127.0.0.1"
+    "studio:agent": "node scripts/studio-agent.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "4.3.5",
