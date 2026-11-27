@@ -1,0 +1,31 @@
+---
+import '../../styles/global.css';
+import CampaignHero from '../../components/CampaignHero.astro';
+import { validateCampaign } from '../../lib/campaign.mjs';
+
+export function getStaticPaths() {
+  const files = import.meta.glob('../../campaigns/*.json', { eager: true, import: 'default' });
+  const usedSlugs = new Set();
+  return Object.values(files).map((data) => {
+    const campaign = validateCampaign(data);
+    if (usedSlugs.has(campaign.slug)) throw new Error(`Duplicate campaign slug: ${campaign.slug}`);
+    usedSlugs.add(campaign.slug);
+    return { params: { slug: campaign.slug }, props: { campaign } };
+  });
+}
+
+const { campaign } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{campaign.headline}</title>
+    <meta name="description" content={campaign.description} />
+  </head>
+  <body class="bg-[#162d26]">
+    <main><CampaignHero campaign={campaign} /></main>
+  </body>
+</html>

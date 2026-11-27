@@ -1,0 +1,22 @@
+---
+import type { validateCampaign } from '../lib/campaign.mjs';
+interface Props {
+  campaign: ReturnType<typeof validateCampaign>;
+  preview?: boolean;
+}
+const { campaign, preview = false } = Astro.props;
+const Heading = preview ? 'h3' : 'h1';
+---
+
+<section class="min-h-96 bg-[#162d26] px-6 py-14 text-white @container">
+  <div class="mx-auto max-w-3xl">
+    <p data-copy="eyebrow" class="mb-5 text-xs font-bold uppercase tracking-[0.22em] text-[#c9f27b]">{campaign.eyebrow}</p>
+    <Heading data-copy="headline" class="max-w-2xl text-4xl font-semibold leading-tight tracking-tight wrap-break-word @lg:text-6xl">{campaign.headline}</Heading>
+    <p data-copy="description" class="mt-5 max-w-xl text-base leading-relaxed text-[#d1e1d8] wrap-break-word">{campaign.description}</p>
+    {preview ? (
+      <span data-copy="ctaLabel" class="mt-8 inline-block max-w-full rounded-md bg-[#c9f27b] px-5 py-3 font-bold text-[#162d26] wrap-break-word">{campaign.ctaLabel}</span>
+    ) : (
+      <a href={campaign.ctaUrl} class="mt-8 inline-block max-w-full rounded-md bg-[#c9f27b] px-5 py-3 font-bold text-[#162d26] wrap-break-word">{campaign.ctaLabel}</a>
+    )}
+  </div>
+</section>

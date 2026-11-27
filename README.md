@@ -73,3 +73,38 @@ gh agent-task create --repo rbeason/TestPlatformEngineering --base main \
 - While signed in as `rbeason`, set **Settings → Codespaces → Default idle timeout** to **5 minutes** before creating the Codespace. Use a **2-core** machine and leave prebuilds off. [Codespaces idle timeout](https://docs.github.com/en/codespaces/setting-your-user-preferences/setting-your-timeout-period-for-github-codespaces)
 - Save your work and choose **Codespaces: Stop Codespace** in the Command Palette at the end of a session. A running development server can emit output and reset the idle timer. GitHub-hosted CI and either agent route can run with your Codespace stopped. [Codespaces dashboard](https://github.com/codespaces)
 - GitHub Free includes **120 core-hours** and **15 GB-month** of Codespaces storage per month. That is up to **60 active hours on a 2-core machine**. Stopped machines continue to use storage, including downloaded browser binaries. Push your work before deleting a Codespace you no longer need. [Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)
+
+## Try Campaign Studio
+
+Run `npm ci` and `npm run dev` from the repository root. Open [Campaign Studio](http://localhost:4321/studio/) or use the link on the DevProd homepage.
+
+1. As **Marketer**, edit the campaign copy and use the **Desktop** and **Mobile** preview widths. Choose a unique page slug and submit the draft.
+2. Switch to **Reviewer**. Request changes with a note, switch back to revise and resubmit, then approve the revision.
+3. For a real PR, download the JSON after submitting and run the command below from your Mac. Merge this prototype into GitHub's `main` first and use the same `rbeason` SSH and GitHub CLI setup as the agent script.
+
+```sh
+npm run campaign:pr -- ~/Downloads/new-campaign.json
+```
+
+The demo stores one draft and its review status in browser storage. The role buttons simulate the two roles on one device. For real publishing, the command validates the JSON, creates a branch with only the content file, builds and smoke-tests it, and opens a draft PR. The GitHub merge is the publishing decision. The static editor stores no GitHub credentials and has no shared team sign-in or cross-device draft storage.
+
+Campaign data lives in `src/campaigns/`. The editor and published pages share `src/components/CampaignHero.astro`. A sample publishes at `/lp/campaign-kickoff/`. To run the new tests independently, build first, then use `node --test tests/campaign.test.mjs` or `npm run test:browser -- studio.spec.mjs --project=desktop`.
+
+## Cloudflare Worker previews and publishing
+
+In the Cloudflare dashboard, open **Workers & Pages → testplatformengineering → Settings → Builds**. The Git repository should be `rbeason/TestPlatformEngineering`. Use these settings. [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+
+| Setting               | Value                                |
+| --------------------- | ------------------------------------ |
+| Production branch     | `main`                               |
+| Root directory        | `/`                                  |
+| Build command         | `npm run build`                      |
+| Deploy command        | `npx --yes wrangler@4.168.0 deploy`  |
+| Enable Preview Builds | On                                   |
+| Preview command       | `npx --yes wrangler@4.168.0 preview` |
+
+Keep the default dependency installation. The build already picks up Node 26 from `.nvmrc`. The checked-in `wrangler.jsonc` connects the Worker to Astro’s static output in `dist`. If the dashboard offers **Set up Worker Previews**, complete that setup, then confirm the Preview command. Under **Domains**, keep the Preview Worker URL enabled. [Branch build controls](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/) · [Workers static assets](https://developers.cloudflare.com/workers/static-assets/binding/)
+
+Open a PR from a branch in the connected repository. After a successful preview build, Cloudflare posts the Preview URL on the PR. Open it and append `/lp/<page-slug>/` to review the finished campaign. Another push updates that Preview. A merge to `main` triggers the production build and deploy. GitHub CI and Cloudflare builds run independently. [Worker Previews](https://developers.cloudflare.com/workers/previews/get-started/)
+
+Preview URLs are public by default. The prototype stores drafts on your device. Enable Cloudflare Access on the preview and production hosts before using the app for private campaigns. [Worker Preview access](https://developers.cloudflare.com/workers/previews/configuration/)
